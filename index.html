@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Haushalts-Ampel</title>
+<meta name="theme-color" content="#1f3a5f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Haushalt">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: eine Spalte fürs Handy – Ampel-Zähler, Filter, Aufgabenliste, schwebender "+"-Button mit Bottom-Sheet */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --ink:#18212b; --muted:#5d6977; --line:#d6dce3;
+  --accent:#1f3a5f; --accent-ink:#ffffff; --housing:#2a323c;
+  --rot:#d93a2b; --gelb:#e9a90c; --gruen:#2f9e5b; --off:#46505c;
+  --rot-soft:#fbe4e1; --gelb-soft:#fcf1d4; --gruen-soft:#dff2e6;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible",ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --r:14px; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#12171d; --surface:#1b222b; --ink:#e8edf2; --muted:#9aa6b3; --line:#2c3642;
+  --accent:#8fb4e3; --accent-ink:#0e1621; --housing:#0b0f14;
+  --rot:#ff6a59; --gelb:#ffc23d; --gruen:#4cc87f; --off:#38424e;
+  --rot-soft:#3a1f1c; --gelb-soft:#3a2f14; --gruen-soft:#173225; color-scheme:dark}}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:120px}
+[hidden]{display:none!important}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+h1{font-family:var(--f-display);font-weight:800;font-size:1.9rem;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0;font-size:.95rem}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.icon-btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;width:42px;height:42px;display:grid;place-items:center;flex:none}
+.icon-btn svg{width:20px;height:20px}
+.icon-btn.spin svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.lights{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.light{display:flex;align-items:center;gap:10px;padding:12px;border-radius:var(--r);border:2px solid transparent;background:var(--surface);text-align:left;min-width:0}
+.light[aria-pressed="true"]{border-color:var(--ink)}
+.lamp{width:28px;height:28px;border-radius:50%;flex:none;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.lamp.rot{background:var(--rot)}.lamp.gelb{background:var(--gelb)}.lamp.gruen{background:var(--gruen)}
+.light b{font-family:var(--f-display);font-size:1.5rem;line-height:1;display:block;font-variant-numeric:tabular-nums}
+.light small{color:var(--muted);font-size:.78rem;display:block}
+@media (max-width:380px){.light{flex-direction:column;align-items:flex-start;gap:6px}}
+
+.banner{background:var(--gelb-soft);border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;align-items:center}
+
+.filters{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;padding:6px 14px;border-radius:999px;font-size:.92rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:700}
+select{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:.92rem}
+
+.list{display:flex;flex-direction:column;gap:10px;padding:0;margin:0;list-style:none}
+.task{background:var(--surface);border-radius:var(--r);padding:12px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+.task.done{opacity:.6}
+.task.done .t-title{text-decoration:line-through}
+.signal{background:var(--housing);border-radius:9px;padding:4px;display:flex;flex-direction:column;gap:3px}
+.signal i{width:12px;height:12px;border-radius:50%;background:var(--off);display:block}
+.signal.rot i:nth-child(1){background:var(--rot)}
+.signal.gelb i:nth-child(2){background:var(--gelb)}
+.signal.gruen i:nth-child(3){background:var(--gruen)}
+.t-main{min-width:0;display:flex;flex-direction:column;gap:4px;background:none;border:0;padding:0;text-align:left}
+.t-title{font-weight:700;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:6px;font-size:.8rem;color:var(--muted);align-items:center}
+.chip{border-radius:999px;padding:2px 9px;background:var(--bg);color:var(--ink);font-weight:700}
+.chip.due{background:var(--gelb-soft)}
+.check{width:40px;height:40px;border-radius:50%;border:2px solid var(--line);background:transparent;display:grid;place-items:center}
+.check svg{width:20px;height:20px;opacity:0}
+.task.done .check{background:var(--gruen);border-color:var(--gruen);color:#fff}
+.task.done .check svg{opacity:1}
+.actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid var(--line);padding-top:10px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:.9rem;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+.btn.danger{color:var(--rot);border-color:currentColor}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.btn:disabled{opacity:.6}
+
+.empty{background:var(--surface);border-radius:var(--r);padding:24px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);font-family:var(--f-display);font-size:1.15rem;margin-bottom:4px}
+.note{font-size:.85rem;color:var(--muted);text-align:center;margin:0}
+
+.fab{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:15px 22px;font-weight:700;font-size:1rem;
+  box-shadow:0 6px 20px rgba(0,0,0,.25);display:flex;align-items:center;gap:8px;z-index:5}
+.scrim{position:fixed;inset:0;background:rgba(10,14,20,.5);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.scrim.center{align-items:center;padding:16px}
+.sheet{background:var(--surface);width:100%;max-width:640px;border-radius:20px 20px 0 0;
+  padding:20px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+  display:flex;flex-direction:column;gap:16px;max-height:92vh;overflow:auto}
+.scrim.center .sheet{border-radius:20px;max-width:380px;padding:22px}
+.sheet h2{font-family:var(--f-display);margin:0;font-size:1.35rem}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>span{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.field input{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;width:100%;font-size:1rem;min-width:0}
+.prio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.prio button{border:2px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:.82rem}
+.prio button b{font-size:.95rem}
+.prio button[aria-pressed="true"].rot{border-color:var(--rot);background:var(--rot-soft)}
+.prio button[aria-pressed="true"].gelb{border-color:var(--gelb);background:var(--gelb-soft)}
+.prio button[aria-pressed="true"].gruen{border-color:var(--gruen);background:var(--gruen-soft)}
+.who{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.who button{border:2px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;font-weight:700}
+.who button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.sheet-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.err{color:var(--rot);font-size:.9rem;margin:0}
+.hint{font-size:.82rem;color:var(--muted);margin:0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);
+  padding:10px 16px;border-radius:999px;font-size:.9rem;z-index:30;max-width:calc(100% - 32px);text-align:center}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .22s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.4}}}
+@media (prefers-reduced-motion:reduce){.icon-btn.spin svg{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Haushalts-Ampel</h1>
+      <p class="sub" id="summary">Aufgaben werden geladen …</p>
+    </div>
+    <button class="icon-btn" id="refresh" aria-label="Liste aktualisieren">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+    </button>
+  </header>
+
+  <section class="lights" aria-label="Offene Aufgaben nach Priorität">
+    <button class="light" data-p="rot" aria-pressed="false"><span class="lamp rot"></span><span><b id="c-rot">0</b><small>zeitnah</small></span></button>
+    <button class="light" data-p="gelb" aria-pressed="false"><span class="lamp gelb"></span><span><b id="c-gelb">0</b><small>demnächst</small></span></button>
+    <button class="light" data-p="gruen" aria-pressed="false"><span class="lamp gruen"></span><span><b id="c-gruen">0</b><small>bei Gelegenheit</small></span></button>
+  </section>
+
+  <div class="banner" id="dueBanner" hidden></div>
+
+  <section class="filters" aria-label="Filter und Sortierung">
+    <div class="row">
+      <div class="seg" role="group" aria-label="Person" id="fPerson">
+        <button data-v="alle" aria-pressed="true">Alle</button>
+        <button data-v="Laura" aria-pressed="false">Laura</button>
+        <button data-v="Max" aria-pressed="false">Max</button>
+      </div>
+      <div class="seg" role="group" aria-label="Status" id="fStatus">
+        <button data-v="offen" aria-pressed="true">Offen</button>
+        <button data-v="erledigt" aria-pressed="false">Erledigt</button>
+        <button data-v="alle" aria-pressed="false">Alle</button>
+      </div>
+    </div>
+    <div class="row">
+      <label for="sort" class="hint">Sortieren:</label>
+      <select id="sort">
+        <option value="prio">Priorität (rot zuerst)</option>
+        <option value="prio-rev">Priorität (grün zuerst)</option>
+        <option value="new">Neueste zuerst</option>
+        <option value="old">Älteste zuerst</option>
+        <option value="person">Person</option>
+        <option value="title">Titel A–Z</option>
+        <option value="reminder">Nächste Erinnerung</option>
+      </select>
+      <button class="btn" id="clearPrio" hidden>Ampel-Filter aufheben</button>
+    </div>
+  </section>
+
+  <ul class="list" id="list"></ul>
+  <div class="empty" id="empty"><strong>Liste wird geladen …</strong>Gleich erscheinen hier alle Aufgaben von Laura und Max.</div>
+  <p class="note" id="status"></p>
+</div>
+
+<button class="fab" id="fab" aria-label="Neue Aufgabe anlegen"><span aria-hidden="true" style="font-size:1.3rem;line-height:1">+</span> Neue Aufgabe</button>
+
+<div class="scrim" id="scrim" hidden>
+  <form class="sheet" id="form" role="dialog" aria-modal="true" aria-labelledby="formTitle" novalidate>
+    <h2 id="formTitle">Neue Aufgabe</h2>
+    <label class="field"><span>Titel</span><input id="fTitle" maxlength="120" placeholder="z. B. Altglas wegbringen" autocomplete="off"></label>
+    <div class="field"><span>Priorität</span>
+      <div class="prio" id="fPrio">
+        <button type="button" class="rot" data-v="rot" aria-pressed="false"><span class="lamp rot"></span><b>Rot</b>zeitnah</button>
+        <button type="button" class="gelb" data-v="gelb" aria-pressed="false"><span class="lamp gelb"></span><b>Gelb</b>demnächst</button>
+        <button type="button" class="gruen" data-v="gruen" aria-pressed="false"><span class="lamp gruen"></span><b>Grün</b>bei Gelegenheit</button>
+      </div>
+    </div>
+    <div class="field"><span>Zuständig</span>
+      <div class="who" id="fWho">
+        <button type="button" data-v="Laura" aria-pressed="false">Laura</button>
+        <button type="button" data-v="Max" aria-pressed="false">Max</button>
+      </div>
+    </div>
+    <label class="field"><span>Erinnerung (optional)</span><input type="datetime-local" id="fRemind"></label>
+    <p class="hint">Zur gewählten Zeit bekommt die zuständige Person eine E-Mail (bis zu 15 Minuten später).</p>
+    <p class="err" id="formErr" hidden></p>
+    <div class="sheet-actions">
+      <button type="button" class="btn" id="remindClear" hidden>Erinnerung entfernen</button>
+      <button type="button" class="btn" id="cancel">Abbrechen</button>
+      <button type="submit" class="btn primary" id="save">Aufgabe speichern</button>
+    </div>
+  </form>
+</div>
+
+<div class="scrim center" id="pinScrim" hidden>
+  <form class="sheet" id="pinForm" role="dialog" aria-modal="true" aria-labelledby="pinTitle" novalidate>
+    <h2 id="pinTitle">Passwort eingeben</h2>
+    <p class="hint">Die Liste ist mit eurem gemeinsamen Passwort geschützt. Es wird auf diesem Gerät gespeichert.</p>
+    <label class="field"><span>Passwort</span><input id="pinInput" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+    <label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pinShow"> Passwort anzeigen</label>
+    <p class="err" id="pinErr" hidden>Das Passwort stimmt nicht. Achtet auf Groß- und Kleinschreibung.</p>
+    <div class="sheet-actions"><button type="submit" class="btn primary">Öffnen</button></div>
+  </form>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+  var PRIO = {rot:{rank:0,label:"Rot · zeitnah"},gelb:{rank:1,label:"Gelb · demnächst"},gruen:{rank:2,label:"Grün · bei Gelegenheit"}};
+  var $ = function(id){ return document.getElementById(id); };
+  var tasks = [], loaded = false, openId = null, confirmId = null, editId = null, busy = 0;
+  var filt = {person:"alle", status:"offen", prio:null, sort:"prio"};
+
+  function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
+  try{ var s = JSON.parse(store("ha-filter")||"null"); if(s){ filt.person=s.person||"alle"; filt.status=s.status||"offen"; filt.sort=s.sort||"prio"; } }catch(e){}
+  function saveFilt(){ store("ha-filter", JSON.stringify({person:filt.person,status:filt.status,sort:filt.sort})); }
+  function pin(){ return store("ha-pin") || ""; }
+
+  function toast(msg){ var t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(function(){ t.hidden=true; },2600); }
+  function esc(s){ var d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+  function fmt(ms){ return new Date(ms).toLocaleString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})+" Uhr"; }
+
+  // ---- Server-Aufrufe (Google Apps Script als Datenspeicher) ----
+  var API = (window.HA_CONFIG && window.HA_CONFIG.API_URL) || "";
+  var configured = /^https:\/\/script\.google\.com\/.+\/exec$/.test(API);
+  function call(action, extra){
+    if(!configured) return Promise.reject(new Error("CONFIG"));
+    busy++; $("refresh").classList.add("spin");
+    var body = {action:action, pin:pin()};
+    for(var k in (extra||{})) body[k]=extra[k];
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function(){ if(ctrl) ctrl.abort(); }, 25000);
+    return fetch(API, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body), redirect:"follow", signal: ctrl?ctrl.signal:undefined})
+      .then(function(r){ if(!r.ok) throw new Error("Der Server antwortet nicht (Fehler "+r.status+")."); return r.json(); })
+      .then(function(d){ if(!d.ok) throw new Error(d.error||"Unbekannter Fehler."); return d.tasks; })
+      .catch(function(e){
+        if(e && e.name==="AbortError") throw new Error("Keine Antwort vom Server. Bitte Internetverbindung prüfen.");
+        if(e instanceof TypeError) throw new Error("Keine Verbindung zum Server. Bitte Internetverbindung prüfen.");
+        throw e;
+      })
+      .then(function(r){ done(); return r; }, function(e){ done(); throw e; });
+    function done(){ clearTimeout(timer); busy--; if(!busy) $("refresh").classList.remove("spin"); }
+  }
+  function handleErr(e){
+    var msg = (e && e.message) || String(e);
+    if(msg==="PIN"){ showPin(!!pin()); return; }
+    if(msg==="CONFIG") return;
+    toast(msg.length<90 ? msg : "Das hat nicht geklappt. Bitte gleich nochmal versuchen.");
+  }
+  function apply(list){
+    tasks = list || []; loaded = true;
+    store("ha-cache", JSON.stringify(tasks));
+    $("status").textContent = "Stand: "+new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})+" Uhr";
+    render();
+  }
+  function load(){ return call("list").then(apply).catch(function(e){
+    handleErr(e);
+    if(!configured){ $("empty").hidden=false; $("empty").innerHTML='<strong>Noch nicht eingerichtet</strong>Bitte die Web-App-URL des Google Apps Scripts in der Datei config.js eintragen.'; $("summary").textContent="Nicht eingerichtet"; return; }
+    if(loaded) $("status").textContent="Nicht aktualisiert – angezeigt wird der letzte bekannte Stand.";
+    else { $("empty").innerHTML='<strong>Liste nicht erreichbar</strong>Bitte prüft die Internetverbindung und tippt oben rechts auf Aktualisieren.'; $("summary").textContent="Nicht verbunden"; }
+  }); }
+
+  function syncSeg(id,val){ document.querySelectorAll("#"+id+" button").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.v===val)); }); }
+  syncSeg("fPerson",filt.person); syncSeg("fStatus",filt.status); $("sort").value=filt.sort;
+
+  function render(){
+    var open = tasks.filter(function(t){ return !t.done; });
+    ["rot","gelb","gruen"].forEach(function(p){
+      $("c-"+p).textContent = open.filter(function(t){ return t.priority===p && (filt.person==="alle"||t.assignee===filt.person); }).length;
+    });
+    document.querySelectorAll(".light").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.p===filt.prio)); });
+    $("clearPrio").hidden = !filt.prio;
+    $("summary").textContent = open.length===1 ? "1 offene Aufgabe" : open.length+" offene Aufgaben";
+
+    var now = Date.now();
+    var due = open.filter(function(t){ return t.reminderAt && t.reminderAt<=now; });
+    $("dueBanner").hidden = !due.length;
+    if(due.length) $("dueBanner").innerHTML = '<span class="lamp gelb" style="width:18px;height:18px"></span><span><strong>'+(due.length===1?"1 Erinnerung ist fällig":due.length+" Erinnerungen sind fällig")+'</strong>: '+due.map(function(t){ return esc(t.title); }).join(", ")+'</span>';
+
+    var view = tasks.filter(function(t){
+      return (filt.person==="alle"||t.assignee===filt.person) &&
+        (filt.status==="alle"||(filt.status==="offen"?!t.done:t.done)) &&
+        (!filt.prio||t.priority===filt.prio);
+    });
+    var r = function(t){ return PRIO[t.priority].rank; };
+    var by = {
+      "prio":function(a,b){ return r(a)-r(b)||b.createdAt-a.createdAt; },
+      "prio-rev":function(a,b){ return r(b)-r(a)||b.createdAt-a.createdAt; },
+      "new":function(a,b){ return b.createdAt-a.createdAt; },
+      "old":function(a,b){ return a.createdAt-b.createdAt; },
+      "person":function(a,b){ return a.assignee.localeCompare(b.assignee)||r(a)-r(b); },
+      "title":function(a,b){ return a.title.localeCompare(b.title,"de"); },
+      "reminder":function(a,b){ return (a.reminderAt||Infinity)-(b.reminderAt||Infinity); }
+    }[filt.sort];
+    view.sort(function(a,b){ return (a.done-b.done) || by(a,b); });
+
+    var ul=$("list"); ul.innerHTML="";
+    view.forEach(function(t){
+      var li=document.createElement("li"); li.className="task"+(t.done?" done":"");
+      var isDue = !t.done && t.reminderAt && t.reminderAt<=now;
+      li.innerHTML =
+        '<span class="signal '+t.priority+'" role="img" aria-label="'+PRIO[t.priority].label+'"><i></i><i></i><i></i></span>'+
+        '<button class="t-main" aria-expanded="'+(openId===t.id)+'"><span class="t-title">'+esc(t.title)+'</span>'+
+        '<span class="meta"><span class="chip">'+esc(t.assignee)+'</span>'+
+        (t.reminderAt?'<span class="chip'+(isDue?' due':'')+'">Erinnerung '+fmt(t.reminderAt)+'</span>':'')+
+        '<span>'+(t.done?'erledigt':'offen')+'</span></span></button>'+
+        '<button class="check" aria-label="'+(t.done?"Wieder öffnen":"Als erledigt markieren")+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>';
+      if(openId===t.id){
+        var a=document.createElement("div"); a.className="actions";
+        a.innerHTML = confirmId===t.id
+          ? '<span>Wirklich löschen?</span><button class="btn danger" data-a="del-yes">Ja, löschen</button><button class="btn" data-a="del-no">Behalten</button>'
+          : '<button class="btn" data-a="edit">Bearbeiten'+(t.reminderAt?'':' / Erinnerung')+'</button><button class="btn danger" data-a="del">Löschen</button>';
+        li.appendChild(a);
+        a.addEventListener("click",function(e){
+          var el=e.target.closest("[data-a]"); if(!el) return;
+          var act=el.dataset.a;
+          if(act==="edit") openSheet(t);
+          if(act==="del"){ confirmId=t.id; render(); }
+          if(act==="del-no"){ confirmId=null; render(); }
+          if(act==="del-yes"){ el.disabled=true; call("delete",{id:t.id}).then(function(l){ openId=null; confirmId=null; apply(l); toast("Aufgabe gelöscht"); }).catch(handleErr); }
+        });
+      }
+      li.querySelector(".t-main").addEventListener("click",function(){ openId = openId===t.id?null:t.id; confirmId=null; render(); });
+      li.querySelector(".check").addEventListener("click",function(){
+        // sofort anzeigen, dann speichern
+        t.done = !t.done; render();
+        call("toggle",{id:t.id}).then(function(l){ apply(l); toast(t.done?"Erledigt":"Wieder offen"); }).catch(function(e){ t.done=!t.done; render(); handleErr(e); });
+      });
+      ul.appendChild(li);
+    });
+
+    var em=$("empty");
+    if(!loaded) return;
+    if(!tasks.length){ em.hidden=false; em.innerHTML='<strong>Noch keine Aufgaben</strong>Tippt unten rechts auf „Neue Aufgabe“, um die erste anzulegen.'; }
+    else if(!view.length){ em.hidden=false; em.innerHTML='<strong>Nichts gefunden</strong>Für diese Filter gibt es gerade keine Aufgaben.'; }
+    else em.hidden=true;
+  }
+
+  // ---- Formular ----
+  var form={prio:null,who:null};
+  function pick(id,val){ form[id==="fPrio"?"prio":"who"]=val; syncSeg(id,val); }
+  $("fPrio").addEventListener("click",function(e){ var b=e.target.closest("button"); if(b) pick("fPrio",b.dataset.v); });
+  $("fWho").addEventListener("click",function(e){ var b=e.target.closest("button"); if(b) pick("fWho",b.dataset.v); });
+  function toLocal(ms){ var d=new Date(ms); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,16); }
+  function openSheet(t){
+    editId = t?t.id:null;
+    $("formTitle").textContent = t?"Aufgabe bearbeiten":"Neue Aufgabe";
+    $("save").textContent = t?"Änderungen speichern":"Aufgabe speichern";
+    $("fTitle").value = t?t.title:"";
+    pick("fPrio", t?t.priority:null); pick("fWho", t?t.assignee:null);
+    $("fRemind").value = t&&t.reminderAt?toLocal(t.reminderAt):"";
+    $("remindClear").hidden = !(t&&t.reminderAt);
+    $("formErr").hidden=true; $("scrim").hidden=false;
+    setTimeout(function(){ $("fTitle").focus(); },50);
+  }
+  function closeSheet(){ $("scrim").hidden=true; editId=null; }
+  $("fab").addEventListener("click",function(){ openSheet(null); });
+  $("cancel").addEventListener("click",closeSheet);
+  $("remindClear").addEventListener("click",function(){ $("fRemind").value=""; $("remindClear").hidden=true; });
+  $("scrim").addEventListener("click",function(e){ if(e.target===$("scrim")) closeSheet(); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&!$("scrim").hidden) closeSheet(); });
+
+  $("form").addEventListener("submit",function(e){
+    e.preventDefault();
+    var title=$("fTitle").value.trim(), miss=[];
+    if(!title) miss.push("einen Titel"); if(!form.prio) miss.push("eine Priorität"); if(!form.who) miss.push("die zuständige Person");
+    if(miss.length){ $("formErr").textContent="Bitte wähle noch "+miss.join(", ").replace(/, ([^,]*)$/," und $1")+"."; $("formErr").hidden=false; return; }
+    var rv=$("fRemind").value;
+    var data={id:editId, title:title, priority:form.prio, assignee:form.who, reminderAt: rv? new Date(rv).getTime() : null};
+    var wasEdit = !!editId;
+    $("save").disabled=true;
+    call("save",{task:data}).then(function(l){ closeSheet(); apply(l); toast(wasEdit?"Änderungen gespeichert":"Aufgabe angelegt"); })
+      .catch(function(err){ var m=(err&&err.message)||""; if(m!=="PIN"&&m!=="CONFIG"){ $("formErr").textContent=m||"Speichern hat nicht geklappt."; $("formErr").hidden=false; } handleErr(err); })
+      .then(function(){ $("save").disabled=false; });
+  });
+
+  // ---- PIN ----
+  function showPin(wrong){ $("pinErr").hidden=!wrong; $("pinScrim").hidden=false; setTimeout(function(){ $("pinInput").focus(); },50); }
+  $("pinShow").addEventListener("change",function(e){ $("pinInput").type = e.target.checked ? "text" : "password"; });
+  $("pinForm").addEventListener("submit",function(e){
+    e.preventDefault(); store("ha-pin",$("pinInput").value.trim()); $("pinScrim").hidden=true; load();
+  });
+
+  // ---- Filter ----
+  $("fPerson").addEventListener("click",function(e){ var b=e.target.closest("button"); if(!b) return; filt.person=b.dataset.v; syncSeg("fPerson",filt.person); saveFilt(); render(); });
+  $("fStatus").addEventListener("click",function(e){ var b=e.target.closest("button"); if(!b) return; filt.status=b.dataset.v; syncSeg("fStatus",filt.status); saveFilt(); render(); });
+  $("sort").addEventListener("change",function(e){ filt.sort=e.target.value; saveFilt(); render(); });
+  document.querySelectorAll(".light").forEach(function(b){ b.addEventListener("click",function(){ filt.prio = filt.prio===b.dataset.p?null:b.dataset.p; render(); }); });
+  $("clearPrio").addEventListener("click",function(){ filt.prio=null; render(); });
+  $("refresh").addEventListener("click",load);
+
+  // Aktualisieren: beim Start, beim Zurückkehren in die App und alle 30 Sekunden
+  document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible"&&$("scrim").hidden) load(); });
+  setInterval(function(){ if(document.visibilityState==="visible"&&$("scrim").hidden&&!busy) load(); },30000);
+  try{ var c=JSON.parse(store("ha-cache")||"null"); if(Array.isArray(c)){ tasks=c; loaded=true; render(); $("status").textContent="Wird aktualisiert …"; } }catch(e){}
+  load();
+})();
+</script>
+</body>
+</html>
