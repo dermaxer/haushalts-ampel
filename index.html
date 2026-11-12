@@ -16,10 +16,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
 <style>
-/* Layout: eine Spalte fürs Handy – Ampel-Zähler, Filter, Aufgabenliste, schwebender "+"-Button mit Bottom-Sheet */
+/* Layout: eine Spalte fürs Handy – Kopf, Umschalter Aufgaben/Listen, darunter die jeweilige Ansicht, schwebender "+"-Button mit Bottom-Sheet */
 :root{
   --bg:#eef1f4; --surface:#ffffff; --ink:#18212b; --muted:#5d6977; --line:#d6dce3;
-  --accent:#1f3a5f; --accent-ink:#ffffff; --housing:#2a323c;
+  --accent:#1f3a5f; --accent-ink:#ffffff; --housing:#2a323c; --note:#6b4fa0; --note-soft:#ece6f6;
   --rot:#d93a2b; --gelb:#e9a90c; --gruen:#2f9e5b; --off:#46505c;
   --rot-soft:#fbe4e1; --gelb-soft:#fcf1d4; --gruen-soft:#dff2e6;
   --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
@@ -28,7 +28,7 @@
 }
 @media (prefers-color-scheme:dark){:root{
   --bg:#12171d; --surface:#1b222b; --ink:#e8edf2; --muted:#9aa6b3; --line:#2c3642;
-  --accent:#8fb4e3; --accent-ink:#0e1621; --housing:#0b0f14;
+  --accent:#8fb4e3; --accent-ink:#0e1621; --housing:#0b0f14; --note:#b9a2e6; --note-soft:#2a2238;
   --rot:#ff6a59; --gelb:#ffc23d; --gruen:#4cc87f; --off:#38424e;
   --rot-soft:#3a1f1c; --gelb-soft:#3a2f14; --gruen-soft:#173225; color-scheme:dark}}
 
@@ -39,8 +39,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);fo
   padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:120px}
 [hidden]{display:none!important}
 .wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.view{display:flex;flex-direction:column;gap:18px}
 header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
-h1{font-family:var(--f-display);font-weight:800;font-size:1.9rem;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.head-actions{display:flex;gap:8px;align-items:center}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(1.3rem,5.8vw,1.9rem);letter-spacing:-.02em;margin:0;white-space:nowrap}
+header>div:first-child{min-width:0}
+h2.list-title{font-family:var(--f-display);font-weight:800;font-size:1.5rem;letter-spacing:-.01em;margin:0;overflow-wrap:anywhere;text-wrap:balance}
 .sub{color:var(--muted);margin:2px 0 0;font-size:.95rem}
 button,select,input{font:inherit;color:inherit}
 button{cursor:pointer}
@@ -49,7 +53,15 @@ button{cursor:pointer}
 .icon-btn svg{width:20px;height:20px}
 .icon-btn.spin svg{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.me{border:1px solid var(--line);background:var(--surface);border-radius:999px;height:42px;padding:0 12px;font-weight:700;font-size:.9rem;white-space:nowrap}
 
+/* Umschalter */
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px}
+.tabs button{border:0;background:transparent;border-radius:10px;padding:10px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs .count{font-size:.78rem;font-weight:700;border-radius:999px;padding:1px 8px;background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* Ampel */
 .lights{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .light{display:flex;align-items:center;gap:10px;padding:12px;border-radius:var(--r);border:2px solid transparent;background:var(--surface);text-align:left;min-width:0}
 .light[aria-pressed="true"]{border-color:var(--ink)}
@@ -58,16 +70,18 @@ button{cursor:pointer}
 .light b{font-family:var(--f-display);font-size:1.5rem;line-height:1;display:block;font-variant-numeric:tabular-nums}
 .light small{color:var(--muted);font-size:.78rem;display:block}
 @media (max-width:380px){.light{flex-direction:column;align-items:flex-start;gap:6px}}
-
 .banner{background:var(--gelb-soft);border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;align-items:center}
 
+/* Filter */
 .filters{display:flex;flex-direction:column;gap:10px}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}
 .seg button{border:0;background:transparent;padding:6px 14px;border-radius:999px;font-size:.92rem}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.seg-label{font-size:.82rem;color:var(--muted)}
 select{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:.92rem}
 
+/* Aufgaben */
 .list{display:flex;flex-direction:column;gap:10px;padding:0;margin:0;list-style:none}
 .task{background:var(--surface);border-radius:var(--r);padding:12px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
 .task.done{opacity:.6}
@@ -82,15 +96,38 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:999p
 .meta{display:flex;flex-wrap:wrap;gap:6px;font-size:.8rem;color:var(--muted);align-items:center}
 .chip{border-radius:999px;padding:2px 9px;background:var(--bg);color:var(--ink);font-weight:700}
 .chip.due{background:var(--gelb-soft)}
-.check{width:40px;height:40px;border-radius:50%;border:2px solid var(--line);background:transparent;display:grid;place-items:center}
+.check{width:40px;height:40px;border-radius:50%;border:2px solid var(--line);background:transparent;display:grid;place-items:center;flex:none}
 .check svg{width:20px;height:20px;opacity:0}
-.task.done .check{background:var(--gruen);border-color:var(--gruen);color:#fff}
-.task.done .check svg{opacity:1}
+.done .check{background:var(--gruen);border-color:var(--gruen);color:#fff}
+.done .check svg{opacity:1}
 .actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid var(--line);padding-top:10px;align-items:center}
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:.9rem;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
 .btn.danger{color:var(--rot);border-color:currentColor}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
 .btn:disabled{opacity:.6}
+
+/* Listen-Übersicht */
+.lcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;padding:0;margin:0;list-style:none}
+.lcard{width:100%;height:100%;background:var(--surface);border:0;border-radius:var(--r);padding:14px;text-align:left;display:flex;flex-direction:column;gap:10px}
+.lcard .ltop{display:flex;gap:10px;align-items:flex-start}
+.lcard .lname{font-family:var(--f-display);font-weight:600;font-size:1.12rem;line-height:1.25;overflow-wrap:anywhere;min-width:0;flex:1}
+.lcard .lico{width:30px;height:30px;border-radius:8px;background:var(--note-soft);color:var(--note);display:grid;place-items:center;flex:none}
+.lcard .lico svg{width:17px;height:17px}
+.bar{height:6px;border-radius:999px;background:var(--bg);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--note);border-radius:999px}
+
+/* Listen-Detail */
+.back{align-self:flex-start;border:0;background:none;padding:4px 0;color:var(--muted);font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.ldhead{display:flex;flex-direction:column;gap:8px}
+.addbar{display:flex;gap:8px}
+.addbar input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:1rem}
+.item{background:var(--surface);border-radius:var(--r);padding:10px 12px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+.item.done .i-text{text-decoration:line-through;color:var(--muted)}
+.item .i-main{min-width:0;display:flex;flex-direction:column;gap:2px}
+.i-text{overflow-wrap:anywhere}
+.del{border:0;background:none;color:var(--muted);width:36px;height:36px;border-radius:50%;display:grid;place-items:center}
+.del svg{width:18px;height:18px}
+.item .actions{border-top:1px solid var(--line)}
 
 .empty{background:var(--surface);border-radius:var(--r);padding:24px;text-align:center;color:var(--muted)}
 .empty strong{display:block;color:var(--ink);font-family:var(--f-display);font-size:1.15rem;margin-bottom:4px}
@@ -132,56 +169,120 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:999p
   <header>
     <div>
       <h1>Haushalts-Ampel</h1>
-      <p class="sub" id="summary">Aufgaben werden geladen …</p>
+      <p class="sub" id="summary">Wird geladen …</p>
     </div>
-    <button class="icon-btn" id="refresh" aria-label="Liste aktualisieren">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
-    </button>
+    <div class="head-actions">
+      <button class="me" id="meBtn" aria-label="Wer nutzt dieses Gerät? Ändern">Wer bist du?</button>
+      <button class="icon-btn" id="refresh" aria-label="Aktualisieren">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+      </button>
+    </div>
   </header>
 
-  <section class="lights" aria-label="Offene Aufgaben nach Priorität">
-    <button class="light" data-p="rot" aria-pressed="false"><span class="lamp rot"></span><span><b id="c-rot">0</b><small>zeitnah</small></span></button>
-    <button class="light" data-p="gelb" aria-pressed="false"><span class="lamp gelb"></span><span><b id="c-gelb">0</b><small>demnächst</small></span></button>
-    <button class="light" data-p="gruen" aria-pressed="false"><span class="lamp gruen"></span><span><b id="c-gruen">0</b><small>bei Gelegenheit</small></span></button>
+  <nav class="tabs" role="tablist" aria-label="Ansicht wählen">
+    <button role="tab" id="tabTodos" aria-selected="true" aria-controls="viewTodos">Aufgaben <span class="count" id="tabTodosCount">0</span></button>
+    <button role="tab" id="tabLists" aria-selected="false" aria-controls="viewLists">Listen <span class="count" id="tabListsCount">0</span></button>
+  </nav>
+
+  <!-- ================= AUFGABEN ================= -->
+  <section class="view" id="viewTodos" role="tabpanel" aria-labelledby="tabTodos">
+    <section class="lights" aria-label="Offene Aufgaben nach Priorität">
+      <button class="light" data-p="rot" aria-pressed="false"><span class="lamp rot"></span><span><b id="c-rot">0</b><small>zeitnah</small></span></button>
+      <button class="light" data-p="gelb" aria-pressed="false"><span class="lamp gelb"></span><span><b id="c-gelb">0</b><small>demnächst</small></span></button>
+      <button class="light" data-p="gruen" aria-pressed="false"><span class="lamp gruen"></span><span><b id="c-gruen">0</b><small>bei Gelegenheit</small></span></button>
+    </section>
+
+    <div class="banner" id="dueBanner" hidden></div>
+
+    <section class="filters" aria-label="Filter und Sortierung">
+      <div class="row">
+        <div class="seg" role="group" aria-label="Zuständig" id="fPerson">
+          <button data-v="alle" aria-pressed="true">Alle</button>
+          <button data-v="Laura" aria-pressed="false">Laura</button>
+          <button data-v="Max" aria-pressed="false">Max</button>
+        </div>
+        <div class="seg" role="group" aria-label="Status" id="fStatus">
+          <button data-v="offen" aria-pressed="true">Offen</button>
+          <button data-v="erledigt" aria-pressed="false">Erledigt</button>
+          <button data-v="alle" aria-pressed="false">Alle</button>
+        </div>
+      </div>
+      <div class="row">
+        <label for="sort" class="seg-label">Sortieren:</label>
+        <select id="sort">
+          <option value="prio">Priorität (rot zuerst)</option>
+          <option value="prio-rev">Priorität (grün zuerst)</option>
+          <option value="new">Neueste zuerst</option>
+          <option value="old">Älteste zuerst</option>
+          <option value="person">Person</option>
+          <option value="title">Titel A–Z</option>
+          <option value="reminder">Nächste Erinnerung</option>
+        </select>
+        <button class="btn" id="clearPrio" hidden>Ampel-Filter aufheben</button>
+      </div>
+    </section>
+
+    <ul class="list" id="list"></ul>
+    <div class="empty" id="empty"><strong>Wird geladen …</strong>Gleich erscheinen hier alle Aufgaben von Laura und Max.</div>
   </section>
 
-  <div class="banner" id="dueBanner" hidden></div>
-
-  <section class="filters" aria-label="Filter und Sortierung">
-    <div class="row">
-      <div class="seg" role="group" aria-label="Person" id="fPerson">
-        <button data-v="alle" aria-pressed="true">Alle</button>
-        <button data-v="Laura" aria-pressed="false">Laura</button>
-        <button data-v="Max" aria-pressed="false">Max</button>
+  <!-- ================= LISTEN ================= -->
+  <section class="view" id="viewLists" role="tabpanel" aria-labelledby="tabLists" hidden>
+    <!-- Übersicht -->
+    <div class="view" id="listsOverview">
+      <div class="row">
+        <span class="seg-label">Angelegt von:</span>
+        <div class="seg" role="group" aria-label="Angelegt von" id="flCreator">
+          <button data-v="alle" aria-pressed="true">Alle</button>
+          <button data-v="Laura" aria-pressed="false">Laura</button>
+          <button data-v="Max" aria-pressed="false">Max</button>
+        </div>
       </div>
-      <div class="seg" role="group" aria-label="Status" id="fStatus">
-        <button data-v="offen" aria-pressed="true">Offen</button>
-        <button data-v="erledigt" aria-pressed="false">Erledigt</button>
-        <button data-v="alle" aria-pressed="false">Alle</button>
-      </div>
+      <ul class="lcards" id="lcards"></ul>
+      <div class="empty" id="lEmpty" hidden></div>
     </div>
-    <div class="row">
-      <label for="sort" class="hint">Sortieren:</label>
-      <select id="sort">
-        <option value="prio">Priorität (rot zuerst)</option>
-        <option value="prio-rev">Priorität (grün zuerst)</option>
-        <option value="new">Neueste zuerst</option>
-        <option value="old">Älteste zuerst</option>
-        <option value="person">Person</option>
-        <option value="title">Titel A–Z</option>
-        <option value="reminder">Nächste Erinnerung</option>
-      </select>
-      <button class="btn" id="clearPrio" hidden>Ampel-Filter aufheben</button>
+
+    <!-- Einzelne Liste -->
+    <div class="view" id="listDetail" hidden>
+      <div class="ldhead">
+        <button class="back" id="backBtn"><span aria-hidden="true">‹</span> Alle Listen</button>
+        <h2 class="list-title" id="ldTitle"></h2>
+        <p class="sub" id="ldSub" style="margin:0"></p>
+        <div class="row" id="ldActions"></div>
+      </div>
+      <form class="addbar" id="addForm" novalidate>
+        <label for="addInput" class="seg-label" hidden>Neuer Eintrag</label>
+        <input id="addInput" maxlength="300" placeholder="Neuen Eintrag hinzufügen …" autocomplete="off" enterkeyhint="done">
+        <button type="submit" class="btn primary" id="addBtn">Hinzufügen</button>
+      </form>
+      <section class="filters" aria-label="Einträge filtern">
+        <div class="row">
+          <div class="seg" role="group" aria-label="Status" id="fiStatus">
+            <button data-v="offen" aria-pressed="true">Offen</button>
+            <button data-v="erledigt" aria-pressed="false">Erledigt</button>
+            <button data-v="alle" aria-pressed="false">Alle</button>
+          </div>
+          <div class="row" style="gap:6px">
+            <span class="seg-label">Von:</span>
+            <div class="seg" role="group" aria-label="Eingetragen von" id="fiCreator">
+              <button data-v="alle" aria-pressed="true">Alle</button>
+              <button data-v="Laura" aria-pressed="false">Laura</button>
+              <button data-v="Max" aria-pressed="false">Max</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <ul class="list" id="items"></ul>
+      <div class="empty" id="iEmpty" hidden></div>
     </div>
   </section>
 
-  <ul class="list" id="list"></ul>
-  <div class="empty" id="empty"><strong>Liste wird geladen …</strong>Gleich erscheinen hier alle Aufgaben von Laura und Max.</div>
   <p class="note" id="status"></p>
 </div>
 
-<button class="fab" id="fab" aria-label="Neue Aufgabe anlegen"><span aria-hidden="true" style="font-size:1.3rem;line-height:1">+</span> Neue Aufgabe</button>
+<button class="fab" id="fab"><span aria-hidden="true" style="font-size:1.3rem;line-height:1">+</span> <span id="fabLabel">Neue Aufgabe</span></button>
 
+<!-- Aufgabe anlegen/bearbeiten -->
 <div class="scrim" id="scrim" hidden>
   <form class="sheet" id="form" role="dialog" aria-modal="true" aria-labelledby="formTitle" novalidate>
     <h2 id="formTitle">Neue Aufgabe</h2>
@@ -210,10 +311,36 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:999p
   </form>
 </div>
 
+<!-- Liste anlegen/umbenennen -->
+<div class="scrim" id="listScrim" hidden>
+  <form class="sheet" id="listForm" role="dialog" aria-modal="true" aria-labelledby="listFormTitle" novalidate>
+    <h2 id="listFormTitle">Neue Liste</h2>
+    <label class="field"><span>Name der Liste</span><input id="lName" maxlength="80" placeholder="z. B. Ideen für Geburtstagsgeschenke" autocomplete="off"></label>
+    <p class="err" id="listErr" hidden></p>
+    <div class="sheet-actions">
+      <button type="button" class="btn" id="listCancel">Abbrechen</button>
+      <button type="submit" class="btn primary" id="listSave">Liste anlegen</button>
+    </div>
+  </form>
+</div>
+
+<!-- Wer nutzt dieses Gerät? -->
+<div class="scrim center" id="meScrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="meTitle">
+    <h2 id="meTitle">Wer nutzt dieses Gerät?</h2>
+    <p class="hint">Damit bei neuen Listen und Einträgen steht, wer sie angelegt hat. Die Auswahl wird auf diesem Gerät gespeichert und lässt sich oben jederzeit ändern.</p>
+    <div class="who" id="meWho">
+      <button type="button" data-v="Laura" aria-pressed="false">Laura</button>
+      <button type="button" data-v="Max" aria-pressed="false">Max</button>
+    </div>
+  </div>
+</div>
+
+<!-- Passwort -->
 <div class="scrim center" id="pinScrim" hidden>
   <form class="sheet" id="pinForm" role="dialog" aria-modal="true" aria-labelledby="pinTitle" novalidate>
     <h2 id="pinTitle">Passwort eingeben</h2>
-    <p class="hint">Die Liste ist mit eurem gemeinsamen Passwort geschützt. Es wird auf diesem Gerät gespeichert.</p>
+    <p class="hint">Die Haushalts-Ampel ist mit eurem gemeinsamen Passwort geschützt. Es wird auf diesem Gerät gespeichert.</p>
     <label class="field"><span>Passwort</span><input id="pinInput" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
     <label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pinShow"> Passwort anzeigen</label>
     <p class="err" id="pinErr" hidden>Das Passwort stimmt nicht. Achtet auf Groß- und Kleinschreibung.</p>
@@ -226,20 +353,31 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:999p
 <script>
 (function(){
   var PRIO = {rot:{rank:0,label:"Rot · zeitnah"},gelb:{rank:1,label:"Gelb · demnächst"},gruen:{rank:2,label:"Grün · bei Gelegenheit"}};
+  var CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  var TRASH_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+  var LIST_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>';
   var $ = function(id){ return document.getElementById(id); };
-  var tasks = [], loaded = false, openId = null, confirmId = null, editId = null, busy = 0;
-  var filt = {person:"alle", status:"offen", prio:null, sort:"prio"};
 
-  function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
-  try{ var s = JSON.parse(store("ha-filter")||"null"); if(s){ filt.person=s.person||"alle"; filt.status=s.status||"offen"; filt.sort=s.sort||"prio"; } }catch(e){}
-  function saveFilt(){ store("ha-filter", JSON.stringify({person:filt.person,status:filt.status,sort:filt.sort})); }
+  // ---------- Zustand ----------
+  var tasks = [], lists = [], items = [], loaded = false, busy = 0;
+  var openId = null, confirmId = null, editId = null;            // Aufgaben
+  var view = "todos", currentList = null;                         // Navigation
+  var itemConfirm = null, listConfirm = false, renameId = null;   // Listen
+
+  function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } }
+  var filt = {person:"alle", status:"offen", prio:null, sort:"prio", lCreator:"alle", iStatus:"offen", iCreator:"alle"};
+  try{ var s = JSON.parse(store("ha-filter")||"null"); if(s){ for(var k in s){ if(k!=="prio") filt[k]=s[k]; } } }catch(e){}
+  function saveFilt(){ var o={}; for(var k in filt){ if(k!=="prio") o[k]=filt[k]; } store("ha-filter", JSON.stringify(o)); }
   function pin(){ return store("ha-pin") || ""; }
+  function me(){ var m=store("ha-me"); return (m==="Laura"||m==="Max")?m:""; }
 
   function toast(msg){ var t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(function(){ t.hidden=true; },2600); }
   function esc(s){ var d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
   function fmt(ms){ return new Date(ms).toLocaleString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})+" Uhr"; }
+  function fmtDay(ms){ return ms ? new Date(ms).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit"}) : ""; }
+  function syncSeg(id,val){ document.querySelectorAll("#"+id+" button").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.v===val)); }); }
 
-  // ---- Server-Aufrufe (Google Apps Script als Datenspeicher) ----
+  // ---------- Server ----------
   var API = (window.HA_CONFIG && window.HA_CONFIG.API_URL) || "";
   var configured = /^https:\/\/script\.google\.com\/.+\/exec$/.test(API);
   function call(action, extra){
@@ -251,7 +389,7 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:999p
     var timer = setTimeout(function(){ if(ctrl) ctrl.abort(); }, 25000);
     return fetch(API, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(body), redirect:"follow", signal: ctrl?ctrl.signal:undefined})
       .then(function(r){ if(!r.ok) throw new Error("Der Server antwortet nicht (Fehler "+r.status+")."); return r.json(); })
-      .then(function(d){ if(!d.ok) throw new Error(d.error||"Unbekannter Fehler."); return d.tasks; })
+      .then(function(d){ if(!d.ok) throw new Error(d.error||"Unbekannter Fehler."); return d; })
       .catch(function(e){
         if(e && e.name==="AbortError") throw new Error("Keine Antwort vom Server. Bitte Internetverbindung prüfen.");
         if(e instanceof TypeError) throw new Error("Keine Verbindung zum Server. Bitte Internetverbindung prüfen.");
@@ -264,39 +402,80 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:999p
     var msg = (e && e.message) || String(e);
     if(msg==="PIN"){ showPin(!!pin()); return; }
     if(msg==="CONFIG") return;
-    toast(msg.length<90 ? msg : "Das hat nicht geklappt. Bitte gleich nochmal versuchen.");
+    toast(msg.length<110 ? msg : "Das hat nicht geklappt. Bitte gleich nochmal versuchen.");
   }
-  function apply(list){
-    tasks = list || []; loaded = true;
-    store("ha-cache", JSON.stringify(tasks));
+  function apply(d){
+    if(d.tasks) tasks = d.tasks;
+    if(d.lists) lists = d.lists;
+    if(d.items) items = d.items;
+    loaded = true;
+    store("ha-cache2", JSON.stringify({tasks:tasks, lists:lists, items:items}));
     $("status").textContent = "Stand: "+new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})+" Uhr";
     render();
   }
-  function load(){ return call("list").then(apply).catch(function(e){
+  function load(){ return call("all").then(apply).catch(function(e){
     handleErr(e);
-    if(!configured){ $("empty").hidden=false; $("empty").innerHTML='<strong>Noch nicht eingerichtet</strong>Bitte die Web-App-URL des Google Apps Scripts in der Datei config.js eintragen.'; $("summary").textContent="Nicht eingerichtet"; return; }
+    if(!configured){ $("empty").innerHTML='<strong>Noch nicht eingerichtet</strong>Bitte die Web-App-URL des Google Apps Scripts in der Datei config.js eintragen.'; $("summary").textContent="Nicht eingerichtet"; return; }
     if(loaded) $("status").textContent="Nicht aktualisiert – angezeigt wird der letzte bekannte Stand.";
-    else { $("empty").innerHTML='<strong>Liste nicht erreichbar</strong>Bitte prüft die Internetverbindung und tippt oben rechts auf Aktualisieren.'; $("summary").textContent="Nicht verbunden"; }
+    else { $("empty").innerHTML='<strong>Nicht erreichbar</strong>Bitte prüft die Internetverbindung und tippt oben rechts auf Aktualisieren.'; $("summary").textContent="Nicht verbunden"; }
   }); }
 
-  function syncSeg(id,val){ document.querySelectorAll("#"+id+" button").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.v===val)); }); }
-  syncSeg("fPerson",filt.person); syncSeg("fStatus",filt.status); $("sort").value=filt.sort;
+  // ---------- Navigation (#aufgaben, #listen, #liste-<id>) ----------
+  function route(){
+    var h = location.hash.replace(/^#/,"");
+    if(h.indexOf("liste-")===0){ view="lists"; currentList=h.slice(6); }
+    else if(h==="listen"){ view="lists"; currentList=null; }
+    else { view="todos"; currentList=null; }
+    itemConfirm=null; listConfirm=false;
+    store("ha-view", view);
+    render();
+    window.scrollTo(0,0);
+  }
+  function go(h){ if(location.hash==="#"+h) route(); else location.hash=h; }
+  $("tabTodos").addEventListener("click",function(){ go("aufgaben"); });
+  $("tabLists").addEventListener("click",function(){ go("listen"); });
+  $("backBtn").addEventListener("click",function(){ go("listen"); });
 
+  // ---------- Darstellung ----------
   function render(){
-    var open = tasks.filter(function(t){ return !t.done; });
+    var openTasks = tasks.filter(function(t){ return !t.done; });
+    $("tabTodosCount").textContent = openTasks.length;
+    $("tabListsCount").textContent = lists.length;
+    $("tabTodos").setAttribute("aria-selected", String(view==="todos"));
+    $("tabLists").setAttribute("aria-selected", String(view==="lists"));
+    $("viewTodos").hidden = view!=="todos";
+    $("viewLists").hidden = view!=="lists";
+    $("meBtn").textContent = me() ? me() : "Wer bist du?";
+
+    if(view==="todos"){
+      $("summary").textContent = openTasks.length===1 ? "1 offene Aufgabe" : openTasks.length+" offene Aufgaben";
+      $("fab").hidden=false; $("fabLabel").textContent="Neue Aufgabe";
+      renderTodos(openTasks);
+    } else {
+      var l = currentList && lists.filter(function(x){ return x.id===currentList; })[0];
+      if(currentList && !l && loaded){ currentList=null; history.replaceState(null,"","#listen"); }
+      $("listsOverview").hidden = !!l;
+      $("listDetail").hidden = !l;
+      if(l){ $("fab").hidden=true; renderDetail(l); }
+      else { $("fab").hidden=false; $("fabLabel").textContent="Neue Liste"; renderOverview(); }
+      $("summary").textContent = lists.length===1 ? "1 Liste" : lists.length+" Listen";
+    }
+  }
+
+  // ----- Aufgaben -----
+  function renderTodos(open){
     ["rot","gelb","gruen"].forEach(function(p){
       $("c-"+p).textContent = open.filter(function(t){ return t.priority===p && (filt.person==="alle"||t.assignee===filt.person); }).length;
     });
     document.querySelectorAll(".light").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.p===filt.prio)); });
     $("clearPrio").hidden = !filt.prio;
-    $("summary").textContent = open.length===1 ? "1 offene Aufgabe" : open.length+" offene Aufgaben";
 
     var now = Date.now();
     var due = open.filter(function(t){ return t.reminderAt && t.reminderAt<=now; });
     $("dueBanner").hidden = !due.length;
     if(due.length) $("dueBanner").innerHTML = '<span class="lamp gelb" style="width:18px;height:18px"></span><span><strong>'+(due.length===1?"1 Erinnerung ist fällig":due.length+" Erinnerungen sind fällig")+'</strong>: '+due.map(function(t){ return esc(t.title); }).join(", ")+'</span>';
 
-    var view = tasks.filter(function(t){
+    var v = tasks.filter(function(t){
       return (filt.person==="alle"||t.assignee===filt.person) &&
         (filt.status==="alle"||(filt.status==="offen"?!t.done:t.done)) &&
         (!filt.prio||t.priority===filt.prio);
@@ -310,11 +489,11 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:999p
       "person":function(a,b){ return a.assignee.localeCompare(b.assignee)||r(a)-r(b); },
       "title":function(a,b){ return a.title.localeCompare(b.title,"de"); },
       "reminder":function(a,b){ return (a.reminderAt||Infinity)-(b.reminderAt||Infinity); }
-    }[filt.sort];
-    view.sort(function(a,b){ return (a.done-b.done) || by(a,b); });
+    }[filt.sort] || function(){ return 0; };
+    v.sort(function(a,b){ return (a.done-b.done) || by(a,b); });
 
     var ul=$("list"); ul.innerHTML="";
-    view.forEach(function(t){
+    v.forEach(function(t){
       var li=document.createElement("li"); li.className="task"+(t.done?" done":"");
       var isDue = !t.done && t.reminderAt && t.reminderAt<=now;
       li.innerHTML =
@@ -323,7 +502,7 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:999p
         '<span class="meta"><span class="chip">'+esc(t.assignee)+'</span>'+
         (t.reminderAt?'<span class="chip'+(isDue?' due':'')+'">Erinnerung '+fmt(t.reminderAt)+'</span>':'')+
         '<span>'+(t.done?'erledigt':'offen')+'</span></span></button>'+
-        '<button class="check" aria-label="'+(t.done?"Wieder öffnen":"Als erledigt markieren")+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>';
+        '<button class="check" aria-label="'+(t.done?"Wieder öffnen":"Als erledigt markieren")+'">'+CHECK_SVG+'</button>';
       if(openId===t.id){
         var a=document.createElement("div"); a.className="actions";
         a.innerHTML = confirmId===t.id
@@ -336,14 +515,13 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:999p
           if(act==="edit") openSheet(t);
           if(act==="del"){ confirmId=t.id; render(); }
           if(act==="del-no"){ confirmId=null; render(); }
-          if(act==="del-yes"){ el.disabled=true; call("delete",{id:t.id}).then(function(l){ openId=null; confirmId=null; apply(l); toast("Aufgabe gelöscht"); }).catch(handleErr); }
+          if(act==="del-yes"){ el.disabled=true; call("delete",{id:t.id}).then(function(d){ openId=null; confirmId=null; apply(d); toast("Aufgabe gelöscht"); }).catch(handleErr); }
         });
       }
       li.querySelector(".t-main").addEventListener("click",function(){ openId = openId===t.id?null:t.id; confirmId=null; render(); });
       li.querySelector(".check").addEventListener("click",function(){
-        // sofort anzeigen, dann speichern
-        t.done = !t.done; render();
-        call("toggle",{id:t.id}).then(function(l){ apply(l); toast(t.done?"Erledigt":"Wieder offen"); }).catch(function(e){ t.done=!t.done; render(); handleErr(e); });
+        var nd = !t.done; t.done = nd; render();
+        call("toggle",{id:t.id}).then(function(d){ apply(d); toast(nd?"Erledigt":"Wieder offen"); }).catch(function(e){ t.done=!nd; render(); handleErr(e); });
       });
       ul.appendChild(li);
     });
@@ -351,11 +529,110 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:999p
     var em=$("empty");
     if(!loaded) return;
     if(!tasks.length){ em.hidden=false; em.innerHTML='<strong>Noch keine Aufgaben</strong>Tippt unten rechts auf „Neue Aufgabe“, um die erste anzulegen.'; }
-    else if(!view.length){ em.hidden=false; em.innerHTML='<strong>Nichts gefunden</strong>Für diese Filter gibt es gerade keine Aufgaben.'; }
+    else if(!v.length){ em.hidden=false; em.innerHTML='<strong>Nichts gefunden</strong>Für diese Filter gibt es gerade keine Aufgaben.'; }
     else em.hidden=true;
   }
 
-  // ---- Formular ----
+  // ----- Listen: Übersicht -----
+  function renderOverview(){
+    syncSeg("flCreator", filt.lCreator);
+    var v = lists.filter(function(l){ return filt.lCreator==="alle" || l.createdBy===filt.lCreator; });
+    v.sort(function(a,b){ return a.name.localeCompare(b.name,"de"); });
+    var ul=$("lcards"); ul.innerHTML="";
+    v.forEach(function(l){
+      var its = items.filter(function(i){ return i.listId===l.id; });
+      var open = its.filter(function(i){ return !i.done; }).length;
+      var done = its.length-open;
+      var li=document.createElement("li");
+      li.innerHTML = '<button class="lcard"><span class="ltop"><span class="lico">'+LIST_SVG+'</span><span class="lname">'+esc(l.name)+'</span></span>'+
+        '<span class="meta"><span class="chip">'+open+' offen</span>'+(done?'<span>'+done+' erledigt</span>':'')+'<span>· von '+esc(l.createdBy)+'</span></span>'+
+        (its.length?'<span class="bar" aria-hidden="true"><span style="width:'+Math.round(done/its.length*100)+'%"></span></span>':'')+'</button>';
+      li.querySelector("button").setAttribute("aria-label", l.name+", "+open+" offene Einträge");
+      li.querySelector("button").addEventListener("click",function(){ go("liste-"+l.id); });
+      ul.appendChild(li);
+    });
+    var em=$("lEmpty");
+    if(!loaded){ em.hidden=false; em.innerHTML='<strong>Wird geladen …</strong>'; }
+    else if(!lists.length){ em.hidden=false; em.innerHTML='<strong>Noch keine Listen</strong>Listen sind für Ideen und Gedankenstützen, zum Beispiel „Ideen für Geburtstagsgeschenke“. Tippt unten rechts auf „Neue Liste“.'; }
+    else if(!v.length){ em.hidden=false; em.innerHTML='<strong>Nichts gefunden</strong>'+esc(filt.lCreator)+' hat noch keine Liste angelegt.'; }
+    else em.hidden=true;
+  }
+
+  // ----- Listen: Detail -----
+  function renderDetail(l){
+    $("ldTitle").textContent = l.name;
+    var all = items.filter(function(i){ return i.listId===l.id; });
+    var openN = all.filter(function(i){ return !i.done; }).length;
+    $("ldSub").textContent = openN+" offen · "+(all.length-openN)+" erledigt · angelegt von "+l.createdBy+(l.createdAt?" am "+fmtDay(l.createdAt):"");
+    var acts=$("ldActions");
+    acts.innerHTML = listConfirm
+      ? '<span>Liste mit allen '+all.length+' Einträgen löschen?</span><button class="btn danger" data-a="ldel-yes">Ja, löschen</button><button class="btn" data-a="ldel-no">Behalten</button>'
+      : '<button class="btn" data-a="rename">Umbenennen</button><button class="btn danger" data-a="ldel">Liste löschen</button>';
+
+    syncSeg("fiStatus", filt.iStatus); syncSeg("fiCreator", filt.iCreator);
+    var v = all.filter(function(i){
+      return (filt.iStatus==="alle"||(filt.iStatus==="offen"?!i.done:i.done)) &&
+             (filt.iCreator==="alle"||i.createdBy===filt.iCreator);
+    });
+    v.sort(function(a,b){ return (a.done-b.done) || (b.createdAt-a.createdAt); });
+
+    var ul=$("items"); ul.innerHTML="";
+    v.forEach(function(i){
+      var li=document.createElement("li"); li.className="item"+(i.done?" done":"");
+      li.innerHTML = '<button class="check" aria-label="'+(i.done?"Wieder öffnen":"Als erledigt markieren")+'">'+CHECK_SVG+'</button>'+
+        '<span class="i-main"><span class="i-text">'+esc(i.text)+'</span><span class="meta">von '+esc(i.createdBy)+' · '+fmtDay(i.createdAt)+'</span></span>'+
+        '<button class="del" aria-label="Eintrag löschen">'+TRASH_SVG+'</button>';
+      if(itemConfirm===i.id){
+        var a=document.createElement("div"); a.className="actions";
+        a.innerHTML='<span>Eintrag löschen?</span><button class="btn danger" data-a="yes">Ja, löschen</button><button class="btn" data-a="no">Behalten</button>';
+        a.addEventListener("click",function(e){
+          var el=e.target.closest("[data-a]"); if(!el) return;
+          if(el.dataset.a==="no"){ itemConfirm=null; render(); return; }
+          el.disabled=true;
+          call("itemDelete",{id:i.id}).then(function(d){ itemConfirm=null; apply(d); toast("Eintrag gelöscht"); }).catch(handleErr);
+        });
+        li.appendChild(a);
+      }
+      li.querySelector(".check").addEventListener("click",function(){
+        var nd=!i.done; i.done=nd; render();
+        call("itemToggle",{id:i.id}).then(function(d){ apply(d); toast(nd?"Erledigt":"Wieder offen"); }).catch(function(e){ i.done=!nd; render(); handleErr(e); });
+      });
+      li.querySelector(".del").addEventListener("click",function(){ itemConfirm = itemConfirm===i.id?null:i.id; render(); });
+      ul.appendChild(li);
+    });
+
+    var em=$("iEmpty");
+    if(!all.length){ em.hidden=false; em.innerHTML='<strong>Noch leer</strong>Schreibt oben den ersten Eintrag in das Feld und tippt auf „Hinzufügen“.'; }
+    else if(!v.length){ em.hidden=false; em.innerHTML='<strong>Nichts gefunden</strong>Für diese Filter gibt es keine Einträge.'; }
+    else em.hidden=true;
+  }
+
+  $("ldActions").addEventListener("click",function(e){
+    var el=e.target.closest("[data-a]"); if(!el||!currentList) return;
+    var l = lists.filter(function(x){ return x.id===currentList; })[0]; if(!l) return;
+    var a=el.dataset.a;
+    if(a==="rename") openListSheet(l);
+    if(a==="ldel"){ listConfirm=true; render(); }
+    if(a==="ldel-no"){ listConfirm=false; render(); }
+    if(a==="ldel-yes"){
+      el.disabled=true;
+      call("listDelete",{id:l.id}).then(function(d){ listConfirm=false; apply(d); toast("Liste gelöscht"); go("listen"); }).catch(handleErr);
+    }
+  });
+
+  $("addForm").addEventListener("submit",function(e){
+    e.preventDefault();
+    var text=$("addInput").value.trim(); if(!text||!currentList) return;
+    if(!me()){ askMe(function(){ $("addForm").requestSubmit ? $("addForm").requestSubmit() : null; }); return; }
+    $("addBtn").disabled=true;
+    call("itemAdd",{listId:currentList, text:text, user:me()}).then(function(d){
+      $("addInput").value="";
+      if(filt.iStatus==="erledigt"){ filt.iStatus="offen"; saveFilt(); }
+      apply(d); toast("Eintrag hinzugefügt"); $("addInput").focus();
+    }).catch(handleErr).then(function(){ $("addBtn").disabled=false; });
+  });
+
+  // ---------- Sheet: Aufgabe ----------
   var form={prio:null,who:null};
   function pick(id,val){ form[id==="fPrio"?"prio":"who"]=val; syncSeg(id,val); }
   $("fPrio").addEventListener("click",function(e){ var b=e.target.closest("button"); if(b) pick("fPrio",b.dataset.v); });
@@ -366,19 +643,16 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:999p
     $("formTitle").textContent = t?"Aufgabe bearbeiten":"Neue Aufgabe";
     $("save").textContent = t?"Änderungen speichern":"Aufgabe speichern";
     $("fTitle").value = t?t.title:"";
-    pick("fPrio", t?t.priority:null); pick("fWho", t?t.assignee:null);
+    pick("fPrio", t?t.priority:null); pick("fWho", t?t.assignee:(me()||null));
     $("fRemind").value = t&&t.reminderAt?toLocal(t.reminderAt):"";
     $("remindClear").hidden = !(t&&t.reminderAt);
     $("formErr").hidden=true; $("scrim").hidden=false;
     setTimeout(function(){ $("fTitle").focus(); },50);
   }
   function closeSheet(){ $("scrim").hidden=true; editId=null; }
-  $("fab").addEventListener("click",function(){ openSheet(null); });
   $("cancel").addEventListener("click",closeSheet);
   $("remindClear").addEventListener("click",function(){ $("fRemind").value=""; $("remindClear").hidden=true; });
   $("scrim").addEventListener("click",function(e){ if(e.target===$("scrim")) closeSheet(); });
-  document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&!$("scrim").hidden) closeSheet(); });
-
   $("form").addEventListener("submit",function(e){
     e.preventDefault();
     var title=$("fTitle").value.trim(), miss=[];
@@ -388,31 +662,89 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:999p
     var data={id:editId, title:title, priority:form.prio, assignee:form.who, reminderAt: rv? new Date(rv).getTime() : null};
     var wasEdit = !!editId;
     $("save").disabled=true;
-    call("save",{task:data}).then(function(l){ closeSheet(); apply(l); toast(wasEdit?"Änderungen gespeichert":"Aufgabe angelegt"); })
+    call("save",{task:data}).then(function(d){ closeSheet(); apply(d); toast(wasEdit?"Änderungen gespeichert":"Aufgabe angelegt"); })
       .catch(function(err){ var m=(err&&err.message)||""; if(m!=="PIN"&&m!=="CONFIG"){ $("formErr").textContent=m||"Speichern hat nicht geklappt."; $("formErr").hidden=false; } handleErr(err); })
       .then(function(){ $("save").disabled=false; });
   });
 
-  // ---- PIN ----
+  // ---------- Sheet: Liste ----------
+  function openListSheet(l){
+    renameId = l?l.id:null;
+    $("listFormTitle").textContent = l?"Liste umbenennen":"Neue Liste";
+    $("listSave").textContent = l?"Namen speichern":"Liste anlegen";
+    $("lName").value = l?l.name:"";
+    $("listErr").hidden=true; $("listScrim").hidden=false;
+    setTimeout(function(){ $("lName").focus(); },50);
+  }
+  function closeListSheet(){ $("listScrim").hidden=true; renameId=null; }
+  $("listCancel").addEventListener("click",closeListSheet);
+  $("listScrim").addEventListener("click",function(e){ if(e.target===$("listScrim")) closeListSheet(); });
+  $("listForm").addEventListener("submit",function(e){
+    e.preventDefault();
+    var name=$("lName").value.trim();
+    if(!name){ $("listErr").textContent="Bitte gib der Liste einen Namen."; $("listErr").hidden=false; return; }
+    if(!renameId && !me()){ askMe(function(){ $("listForm").requestSubmit ? $("listForm").requestSubmit() : null; }); return; }
+    var isRename = !!renameId;
+    var before = lists.map(function(l){ return l.id; });
+    $("listSave").disabled=true;
+    var p = isRename ? call("listRename",{id:renameId, name:name}) : call("listCreate",{name:name, user:me()});
+    p.then(function(d){
+      closeListSheet(); apply(d);
+      toast(isRename?"Liste umbenannt":"Liste angelegt");
+      if(!isRename){ var neu = lists.filter(function(l){ return before.indexOf(l.id)<0; })[0]; if(neu) go("liste-"+neu.id); }
+    }).catch(function(err){ var m=(err&&err.message)||""; if(m!=="PIN"&&m!=="CONFIG"){ $("listErr").textContent=m; $("listErr").hidden=false; } handleErr(err); })
+      .then(function(){ $("listSave").disabled=false; });
+  });
+
+  // ---------- FAB ----------
+  $("fab").addEventListener("click",function(){ if(view==="todos") openSheet(null); else openListSheet(null); });
+
+  // ---------- Wer nutzt dieses Gerät? ----------
+  var afterMe = null;
+  function askMe(cb){ afterMe = cb||null; syncSeg("meWho", me()); $("meScrim").hidden=false; }
+  $("meWho").addEventListener("click",function(e){
+    var b=e.target.closest("button"); if(!b) return;
+    store("ha-me", b.dataset.v); $("meScrim").hidden=true; render();
+    toast("Gespeichert: Dieses Gerät gehört "+b.dataset.v);
+    var cb=afterMe; afterMe=null; if(cb) setTimeout(cb,0);
+  });
+  $("meScrim").addEventListener("click",function(e){ if(e.target===$("meScrim")&&me()){ $("meScrim").hidden=true; afterMe=null; } });
+  $("meBtn").addEventListener("click",function(){ askMe(null); });
+
+  // ---------- Passwort ----------
   function showPin(wrong){ $("pinErr").hidden=!wrong; $("pinScrim").hidden=false; setTimeout(function(){ $("pinInput").focus(); },50); }
   $("pinShow").addEventListener("change",function(e){ $("pinInput").type = e.target.checked ? "text" : "password"; });
   $("pinForm").addEventListener("submit",function(e){
-    e.preventDefault(); store("ha-pin",$("pinInput").value.trim()); $("pinScrim").hidden=true; load();
+    e.preventDefault(); store("ha-pin",$("pinInput").value.trim()); $("pinScrim").hidden=true;
+    load().then(function(){ if(loaded && !me()) askMe(null); });
   });
 
-  // ---- Filter ----
-  $("fPerson").addEventListener("click",function(e){ var b=e.target.closest("button"); if(!b) return; filt.person=b.dataset.v; syncSeg("fPerson",filt.person); saveFilt(); render(); });
-  $("fStatus").addEventListener("click",function(e){ var b=e.target.closest("button"); if(!b) return; filt.status=b.dataset.v; syncSeg("fStatus",filt.status); saveFilt(); render(); });
+  // ---------- Filter ----------
+  function segHandler(id,key){ $(id).addEventListener("click",function(e){ var b=e.target.closest("button"); if(!b) return; filt[key]=b.dataset.v; syncSeg(id,filt[key]); saveFilt(); render(); }); }
+  segHandler("fPerson","person"); segHandler("fStatus","status");
+  segHandler("flCreator","lCreator"); segHandler("fiStatus","iStatus"); segHandler("fiCreator","iCreator");
+  syncSeg("fPerson",filt.person); syncSeg("fStatus",filt.status); $("sort").value=filt.sort;
   $("sort").addEventListener("change",function(e){ filt.sort=e.target.value; saveFilt(); render(); });
   document.querySelectorAll(".light").forEach(function(b){ b.addEventListener("click",function(){ filt.prio = filt.prio===b.dataset.p?null:b.dataset.p; render(); }); });
   $("clearPrio").addEventListener("click",function(){ filt.prio=null; render(); });
   $("refresh").addEventListener("click",load);
 
-  // Aktualisieren: beim Start, beim Zurückkehren in die App und alle 30 Sekunden
-  document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible"&&$("scrim").hidden) load(); });
-  setInterval(function(){ if(document.visibilityState==="visible"&&$("scrim").hidden&&!busy) load(); },30000);
-  try{ var c=JSON.parse(store("ha-cache")||"null"); if(Array.isArray(c)){ tasks=c; loaded=true; render(); $("status").textContent="Wird aktualisiert …"; } }catch(e){}
-  load();
+  document.addEventListener("keydown",function(e){
+    if(e.key!=="Escape") return;
+    if(!$("scrim").hidden) closeSheet();
+    else if(!$("listScrim").hidden) closeListSheet();
+  });
+
+  // ---------- Start ----------
+  function sheetsClosed(){ return $("scrim").hidden && $("listScrim").hidden && $("pinScrim").hidden; }
+  document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible"&&sheetsClosed()) load(); });
+  setInterval(function(){ if(document.visibilityState==="visible"&&sheetsClosed()&&!busy&&document.activeElement!==$("addInput")) load(); },30000);
+  window.addEventListener("hashchange",route);
+
+  try{ var c=JSON.parse(store("ha-cache2")||"null"); if(c){ tasks=c.tasks||[]; lists=c.lists||[]; items=c.items||[]; loaded=true; $("status").textContent="Wird aktualisiert …"; } }catch(e){}
+  if(!location.hash && store("ha-view")==="lists") history.replaceState(null,"","#listen");
+  route();
+  load().then(function(){ if(loaded && !me() && $("pinScrim").hidden) askMe(null); });
 })();
 </script>
 </body>
